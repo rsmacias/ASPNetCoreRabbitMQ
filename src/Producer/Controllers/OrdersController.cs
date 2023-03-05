@@ -1,5 +1,6 @@
 using Producer.Data;
 using Producer.Dtos;
+using Producer.RabbitMQ;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Producer.Controllers {
@@ -8,9 +9,11 @@ namespace Producer.Controllers {
     public class OrdersController : ControllerBase {
 
         private readonly IOrderDbContext _context;
+        private readonly IMessageProducer _messagePublisher;
 
-        public OrdersController(IOrderDbContext context) {
+        public OrdersController(IOrderDbContext context, IMessageProducer messagePublisher) {
             _context = context;    
+            _messagePublisher = messagePublisher;
         }
 
         [HttpPost]
@@ -26,7 +29,9 @@ namespace Producer.Controllers {
 
             await _context.SaveChangesAsync();
 
-            return Ok();
+            _messagePublisher.SendMessage(order);
+
+            return Ok(new { id = order.Id });
         }
 
     }
